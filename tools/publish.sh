@@ -74,7 +74,23 @@ else
 fi
 (cd "$work" && tar -c --exclude=.public .) | tar -x -C "$pub"
 
-git -C "$pub" add -A
+# -f, because the staged tree came from `git archive HEAD` and therefore holds
+# nothing BUT tracked files. Without it the public repo's own .gitignore is
+# applied to them and any tracked-but-ignored file is silently dropped -
+# third_party/python311.def is tracked here and matched by `third_party/*.def`,
+# so the first release went out missing a file the notices point at and
+# mkimportlibs.ps1 needs.
+git -C "$pub" add -A -f
+
+# Nothing exported should fail to stage. Catching it here beats discovering it
+# in a clone months later.
+exported="$(cd "$work" && find . -type f -not -path './.public/*' | wc -l)"
+staged="$(git -C "$pub" ls-files | wc -l)"
+if [ "$exported" -ne "$staged" ]; then
+  echo "  REFUSED: exported $exported files but staged $staged - something was dropped"
+  exit 1
+fi
+
 if git -C "$pub" diff --cached --quiet; then
   echo "no change to publish."
   exit 0
