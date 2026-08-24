@@ -446,8 +446,13 @@ void CopyToPointsUSD::knobs(Knob_Callback f)
   KnobDefinesGeometry(f);
   Tooltip(f, "Memory guard, in millions of points: copies x points of the chosen prototypes. Nuke's ScanlineRender2 "
              "un-instances the copies when it renders (measured ~350 bytes per point per copy), so 5000 copies of a "
-             "40k-point mesh = 200M points = ~70 GB. Above this limit nothing is built and the node warns - reduce "
-             "the prototype (fewer polygons, proxy meshes) or the count. 0 = no limit.");
+             "40k-point mesh = 200M points = ~70 GB.\n"
+             "In mode = copies, going over the limit builds nothing: there, every copy really is a referencing prim "
+             "that a renderer has to pay for.\n"
+             "In mode = instances, going over it only WARNS and still builds. A PointInstancer stores the prototype "
+             "once and each copy is a transform, so that product is what an un-instancing renderer WOULD pay, not "
+             "what the stage costs - render it with InstanceRender, or any Hydra renderer that keeps instancing.\n"
+             "Reduce the prototype (fewer polygons, proxy meshes) or the count. 0 = no limit.");
   Float_knob(f, &_density, IRange(0.0, 1.0), "density", "density");
   KnobDefinesGeometry(f);
   Tooltip(f, "Probability that a target receives a copy.");
@@ -1651,6 +1656,16 @@ void CopyToPointsUSDEngine::processScenegraph(usg::GeomSceneContext& context)
     }
 
     // ---- memory guard: copies x prototype points ----------------------------------------
+    // That product is what an UN-INSTANCING renderer pays.  A PointInstancer does
+    // not pay it: the prototype is stored once and every copy is a position, an
+    // orientation, a scale and an id, so 1000 copies of a 615k-point tree costs
+    // 615k points and 1000 transforms - not 615M points.  Refusing to build there
+    // protects nothing and empties the stage in exactly the workflow this node is
+    // for (InstanceRender, or any Hydra renderer that keeps instancing): turning
+    // the density up made the geometry vanish because of the cost MODEL, not
+    // because of any memory that was going to be spent.  So instancer mode warns
+    // and builds; `copies` mode, where every copy really is a referencing prim a
+    // renderer must pay for, still refuses.
     if (op->_maxCopyPoints > 0.0 && nVar > 0) {
       double total = 0.0;
       for (size_t k = 0; k < recs.size(); ++k) {
@@ -1658,17 +1673,29 @@ void CopyToPointsUSDEngine::processScenegraph(usg::GeomSceneContext& context)
         total += (v >= 0 && size_t(v) < protoPointCount.size()) ? protoPointCount[size_t(v)] : 0.0;
       }
       if (total > op->_maxCopyPoints * 1e6) {
-        op->warning("CopyToPointsUSD: %.1fM copy points (%u copies x prototype points) exceed 'max copy points' %.1fM - "
-                    "nothing built. Renders un-instance the copies: use a lighter prototype or fewer copies, or raise the limit.",
-                    total / 1e6, unsigned(recs.size()), op->_maxCopyPoints);
-        ctpLog("usd:guard copy points", std::to_string(total));
+        const bool refuse = (op->_mode == kModeCopies);
+        if (refuse) {
+          op->warning("CopyToPointsUSD: %.1fM copy points (%u copies x prototype points) exceed 'max copy points' %.1fM - "
+                      "nothing built. Every copy here is a referencing prim, so a renderer pays for all of them: use a "
+                      "lighter prototype or fewer copies, switch to mode = instances, or raise the limit.",
+                      total / 1e6, unsigned(recs.size()), op->_maxCopyPoints);
+        } else {
+          // ~350 bytes per point per copy, measured against ScanlineRender2.
+          op->warning("CopyToPointsUSD: %u copies x prototype points = %.1fM points IF un-instanced (~%.0f GB in "
+                      "ScanlineRender2), over 'max copy points' %.1fM - BUILT ANYWAY, because a PointInstancer stores "
+                      "the prototype once and each copy is only a transform. Render it with InstanceRender or a Hydra "
+                      "renderer that keeps instancing, or raise the limit to silence this.",
+                      unsigned(recs.size()), total / 1e6, total * 350.0 / 1e9, op->_maxCopyPoints);
+        }
+        ctpLog(refuse ? "usd:guard copy points" : "usd:guard copy points (warned, built)", std::to_string(total));
         {
           std::ostringstream ig;
-          ig << "CopyToPointsUSD: GUARD - " << total / 1e6 << "M copy points > max copy points " << op->_maxCopyPoints << "M (nothing built)";
+          ig << "CopyToPointsUSD: GUARD - " << total / 1e6 << "M copy points > max copy points " << op->_maxCopyPoints
+             << "M (" << (refuse ? "nothing built" : "built anyway: instanced, prototype stored once") << ")";
           op->_lastInfo = ig.str();
           std::lock_guard<std::mutex> lock(op->_reportMutex); op->_attrReport = op->_lastInfo + "\n" + op->_attrReport;
         }
-        return;
+        if (refuse) return;
       }
     }
 

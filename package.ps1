@@ -14,13 +14,13 @@
 
 .EXAMPLE
   .\build.ps1 -All -Install    # build everything first
-  .\package.ps1                # -> dist\CopyToPoints-1.10.0-Nuke14.1-17.1-win64.zip
+  .\package.ps1                # -> dist\CopyToPoints-1.10.1-Nuke14.1-17.1-win64.zip
 
 .EXAMPLE
   .\package.ps1 -Version 1.11.0 -Versions 17.0,17.1
 #>
 param(
-    [string]$Version = "1.10.0",
+    [string]$Version = "1.10.1",
     [string[]]$Versions = @("14.1", "15.2", "16.0", "16.1", "17.0", "17.1")
 )
 $ErrorActionPreference = "Stop"
@@ -92,7 +92,10 @@ foreach ($f in @("README.md", "INSTALL.md", "COMPATIBILITY.md", "install.ps1", "
 }
 Copy-Item (Join-Path $root "LICENSE") $stage
 Copy-Item (Join-Path $root "THIRD_PARTY_NOTICES.md") $stage
-Set-Content (Join-Path $stage "VERSION.txt") "CopyToPoints $Version`r`nbuilt $(Get-Date -Format 'yyyy-MM-dd')`r`nNuke $($Versions -join ', ') - Windows x64`r`n" -Encoding UTF8
+# WriteAllText, not Set-Content -Encoding UTF8: that writes a BOM on Windows
+# PowerShell and VERSION.txt then opens as "ï»¿CopyToPoints 1.0" in anything
+# that does not strip one.
+[System.IO.File]::WriteAllText((Join-Path $stage "VERSION.txt"), "CopyToPoints $Version`r`nbuilt $(Get-Date -Format 'yyyy-MM-dd')`r`nNuke $($Versions -join ', ') - Windows x64`r`n", (New-Object System.Text.UTF8Encoding($false)))
 
 # ---- nothing that should not ship ------------------------------------------
 $bad = Get-ChildItem $stage -Recurse -File |
