@@ -39,7 +39,7 @@ third-party wrapper is bundled.
 
 ## Icons
 
-`nuke/icons/*.png` are drawn by `tools/make_icons.py` in the NukeInstanceRender
+`nuke/icons/*.png` are drawn by `tools/make_icons.py` in the InstanceRender
 repository. They are stylistically consistent with Nuke's own icon set - a grey
 body, dark interior lines, one colour accent - but no Foundry artwork is copied,
 traced or included.
