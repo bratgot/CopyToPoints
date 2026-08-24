@@ -1,0 +1,201 @@
+#! C:/Program Files/Nuke14.1v8/nuke-14.1.8.dll -nx
+version 14.1 v8
+define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
+<layout version="1.0">
+    <window x="1" y="7" w="1704" h="900" screen="0">
+        <splitter orientation="1">
+            <split size="40"/>
+            <dock id="" hideTitles="1" activePageId="Toolbar.1">
+                <page id="Toolbar.1"/>
+            </dock>
+            <split size="1041" stretch="1"/>
+            <splitter orientation="2">
+                <split size="504"/>
+                <dock id="" activePageId="Viewer.1">
+                    <page id="Viewer.1"/>
+                </dock>
+                <split size="354"/>
+                <dock id="" activePageId="DAG.1" focus="true">
+                    <page id="DAG.1"/>
+                    <page id="Curve Editor.1"/>
+                    <page id="DopeSheet.1"/>
+                </dock>
+            </splitter>
+            <split size="615"/>
+            <dock id="" activePageId="Properties.1">
+                <page id="Properties.1"/>
+                <page id="uk.co.thefoundry.backgroundrenderview.1"/>
+                <page id="Scenegraph.1"/>
+                <page id="uk.co.thefoundry.scripteditor.2"/>
+            </dock>
+        </splitter>
+    </window>
+</layout>
+}
+Root {
+ inputs 0
+ name C:/dev/NukeCopytoPoints/examples/CopyToPoints_example.nk
+ frame 7
+ format "2048 1556 0 0 2048 1556 1 2K_Super_35(full-ap)"
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+ colorManagement Nuke
+ workingSpaceLUT linear
+ monitorLut sRGB
+ monitorOutLUT rec709
+ int8Lut linear
+ int16Lut linear
+ logLut linear
+ floatLut linear
+}
+CheckerBoard2 {
+ inputs 0
+ name CheckerBoard1
+ label "any texture / material"
+ xpos 300
+ ypos -104
+}
+set N4ff1fc00 [stack 0]
+MultiplyCf {
+ name MultiplyCf1
+ label "multiplies the texture by each copy's Cf\n(particle colour) so ScanlineRender shows it"
+ xpos 300
+}
+Camera2 {
+ inputs 0
+ translate {0 2 20}
+ rotate {-6 0 0}
+ name Camera1
+ xpos -200
+ ypos 260
+}
+push $N4ff1fc00
+Cube {
+ cube {-0.7 -0.7 -0.7 0.7 0.7 0.7}
+ name Cube1
+ label "variant 2"
+ xpos 420
+ ypos 80
+}
+set N3f052400 [stack 0]
+ColorWheel {
+ inputs 0
+ gamma 0.45
+ name ColorWheel1
+ xpos 499
+ ypos -48
+}
+Sphere {
+ rows 8
+ columns 12
+ name Sphere1
+ label "variant 1 (unit size: 'size' attr scales it)"
+ xpos 300
+ ypos 80
+}
+set N3f052800 [stack 0]
+ParticleEmitter {
+ inputs 0
+ rate {{curve x1 30 x5 0}}
+ lifetime 60
+ velocity 0.8
+ rotation_velocity 15
+ rotation_velocity_variation 0.6
+ size 0.2
+ spread 0.5
+ color {1 0.6 0.2 1}
+ name ParticleEmitter1
+ label "colour + size drive the copies"
+ xpos 0
+}
+ParticleGravity {
+ name ParticleGravity1
+ xpos 0
+ ypos 60
+}
+ParticleBounce {
+ out_friction 0.915
+ in_bounce 0.1
+ in_friction 0.905
+ bounceaxis_translate {0 -2.619999886 0}
+ bounceaxis_uniform_scale 30
+ name ParticleBounce1
+ xpos 0
+ ypos 117
+}
+ParticleMotionAlign {
+ name ParticleMotionAlign1
+ xpos 6
+ ypos 161
+}
+ParticleToGeo {
+ name ParticleToGeo1
+ xpos 0
+ ypos 211
+ disable true
+}
+CopyToPoints {
+ inputs 3
+ align_mode "direction attribute (e.g. vel / N)"
+ spin "roll along velocity (distance based)"
+ random_scale true
+ scale_min 0.6
+ scale_max 1.4
+ attribute_list "points input: 1 object(s), 480 point(s)\n  object 0: 480 pts, 1 prims (ParticlesSprite)\n    id : points / index / 480\n    Cf : points / vector4 / 480\n    size : points / float / 480\n    vel : particle system / vector3 / 480\n    lastP : particle system / vector3 / 480\n    orient : particle system / vector4 / 480\n    rotaxis : particle system / vector3 / 480\n    rotangle : particle system / float / 480\n    rotvel : particle system / float / 480\n    age : particle system / float / 480\n    life : particle system / float / 480\n    mass : particle system / float / 480\n    psize : particle system / vector3 / 480\n    bounce : particle system / index / 480\n    initialP : particle system / vector3 / 480\n    channels : particle system / index / 480\n    speed : particle system / float / 480\nparticle system (read directly): 480 particle slot(s), 480 of 480 point(s) matched by id, 130 flagged bounce this frame, time 16, channels a..h: a=480 b=0 c=0 d=0 e=0 f=0 g=0 h=0, y range -12.2128..2.82125\n  virtual point attributes: vel, speed, lastP, initialP, orient (quat xyzw), rotaxis, rotangle, rotvel, age, life, mass, psize, bounce (int flags), channels (mask a=1 b=2 ...)\nprototypes: 2 variant(s)\n  variant 0 (geo1 obj 0): 86 pts, 168 prims, material yes\n    N : points / vector / 86\n    uv : vertices / vector4 / 504\n  variant 1 (geo2 obj 0): 726 pts, 600 prims, material yes\n    uv : points / vector4 / 726\n    N : vertices / vector / 2400\n"
+ name CopyToPoints1
+ label "mode: instances (shared) | bake (real copies)"
+ xpos 0
+ ypos 294
+}
+push 0
+ScanlineRender {
+ inputs 3
+ conservative_shader_sampling false
+ motion_vectors_type distance
+ name ScanlineRender1
+ xpos 0
+ ypos 380
+}
+push $N3f052400
+push $N3f052800
+Card2 {
+ inputs 0
+ uniform_scale 10
+ control_points {3 3 3 6 
+
+1 {-0.5 -0.5 0} 0 {0.1666666865 0 0} 0 {0 0 0} 0 {0 0.1666666865 0} 0 {0 0 0} 0 {0 0 0} 
+1 {0 -0.5 0} 0 {0.1666666716 0 0} 0 {-0.1666666716 0 0} 0 {0 0.1666666865 0} 0 {0 0 0} 0 {0.5 0 0} 
+1 {0.5 -0.5 0} 0 {0 0 0} 0 {-0.1666666865 0 0} 0 {0 0.1666666865 0} 0 {0 0 0} 0 {1 0 0} 
+1 {-0.5 0 0} 0 {0.1666666865 0 0} 0 {0 0 0} 0 {0 0.1666666716 0} 0 {0 -0.1666666716 0} 0 {0 0.5 0} 
+1 {0 0 0} 0 {0.1666666716 0 0} 0 {-0.1666666716 0 0} 0 {0 0.1666666716 0} 0 {0 -0.1666666716 0} 0 {0.5 0.5 0} 
+1 {0.5 0 0} 0 {0 0 0} 0 {-0.1666666865 0 0} 0 {0 0.1666666716 0} 0 {0 -0.1666666716 0} 0 {1 0.5 0} 
+1 {-0.5 0.5 0} 0 {0.1666666865 0 0} 0 {0 0 0} 0 {0 0 0} 0 {0 -0.1666666865 0} 0 {0 1 0} 
+1 {0 0.5 0} 0 {0.1666666716 0 0} 0 {-0.1666666716 0 0} 0 {0 0 0} 0 {0 -0.1666666865 0} 0 {0.5 1 0} 
+1 {0.5 0.5 0} 0 {0 0 0} 0 {-0.1666666865 0 0} 0 {0 0 0} 0 {0 -0.1666666865 0} 0 {1 1 0} }
+ name Card1
+ xpos 466
+ ypos 211
+}
+CopyToPoints {
+ inputs 3
+ align_mode "direction attribute (e.g. vel / N)"
+ spin "roll along velocity (distance based)"
+ random_scale true
+ scale_min 0.6
+ scale_max 1.4
+ attribute_list "points input: 1 object(s), 480 point(s)\n  object 0: 480 pts, 1 prims (ParticlesSprite)\n    id : points / index / 480\n    Cf : points / vector4 / 480\n    size : points / float / 480\n    vel : particle system / vector3 / 480\n    lastP : particle system / vector3 / 480\n    orient : particle system / vector4 / 480\n    rotaxis : particle system / vector3 / 480\n    rotangle : particle system / float / 480\n    rotvel : particle system / float / 480\n    age : particle system / float / 480\n    life : particle system / float / 480\n    mass : particle system / float / 480\n    psize : particle system / vector3 / 480\n    bounce : particle system / index / 480\n    initialP : particle system / vector3 / 480\n    channels : particle system / index / 480\n    speed : particle system / float / 480\nparticle system (read directly): 480 particle slot(s), 480 of 480 point(s) matched by id, 130 flagged bounce this frame, time 16, channels a..h: a=480 b=0 c=0 d=0 e=0 f=0 g=0 h=0, y range -12.2128..2.82125\n  virtual point attributes: vel, speed, lastP, initialP, orient (quat xyzw), rotaxis, rotangle, rotvel, age, life, mass, psize, bounce (int flags), channels (mask a=1 b=2 ...)\nprototypes: 2 variant(s)\n  variant 0 (geo1 obj 0): 86 pts, 168 prims, material yes\n    N : points / vector / 86\n    uv : vertices / vector4 / 504\n  variant 1 (geo2 obj 0): 726 pts, 600 prims, material yes\n    uv : points / vector4 / 726\n    N : vertices / vector / 2400\n"
+ name CopyToPoints2
+ label "mode: instances (shared) | bake (real copies)"
+ xpos 363
+ ypos 275
+}
+Viewer {
+ frame 7
+ frame_range 1-100
+ gl_lighting true
+ monitorOutNDISenderName "NukeX - CopyToPoints_example - Viewer1"
+ monitorOutOutputTransform rec709
+ name Viewer1
+ xpos 0
+ ypos 480
+}

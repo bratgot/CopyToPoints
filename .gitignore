@@ -1,0 +1,21 @@
+build/
+build-usd*/
+dist/
+test/out/
+*.pyc
+__pycache__/
+*.autosave
+*~
+# per-version classic builds, one folder per Nuke minor
+build-classic*/
+
+# working scenes and their render output: personal paths, and rewritten every run
+NukeTests/
+
+# the test suite: developer scaffolding, not something anyone installing the
+# plugin needs - it wants a Nuke licence, gigabytes of output and local paths
+test/
+
+# logs and editor leavings
+*.log
+*.autosave
