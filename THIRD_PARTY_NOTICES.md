@@ -4,6 +4,14 @@ CopyToPoints, MultiplyCf, CopyToPointsUSD, ParticlesToUSD and VolumeToUSD are
 MIT (see `LICENSE`). They are **plugins**: compiled against, and loaded by,
 software this repository does not contain and does not redistribute.
 
+## The binary release ships no third-party code either
+
+Unlike a renderer, these nodes need no libraries of their own - they use the USD
+that is already inside Nuke. So the release zip
+(`CopyToPoints-<version>-Nuke...-win64.zip`) holds only this project's own DLLs,
+its Python and its icons: everything below is true of the zip exactly as it is
+true of the repository.
+
 ## What this repository does NOT contain
 
 No third-party source or binary is vendored here. In particular there are **no

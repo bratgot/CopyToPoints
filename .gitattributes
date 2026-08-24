@@ -1,0 +1,5 @@
+# Shell scripts must keep LF even when checked out on Windows. Without this,
+# core.autocrlf=true rewrites them to CRLF on clone and Linux bash then stops
+# at the first line with "$'\r': command not found" - which is exactly how
+# build.sh would greet anyone building on Linux.
+*.sh text eol=lf
